@@ -184,7 +184,7 @@ such that blocks of code that use the Stream API are more concise and simpler to
 Here are some features this API both in terms of collections, input data, and online information 
 streams.
 </p>
-<procedure>
+<procedure title="Java Stream API - Use Cases" collapsible="true">
 <tabs>
 <tab title="Stream APIs On Collections">
 <p>The Stream API was connected early on with the Collection Framework such that most implementations and iterators 
@@ -974,7 +974,7 @@ ecosystem</i></p>
 </procedure>
 <p>Based on this definition, we can extract various important concepts and key definitions that will become more 
 aparent as we play around with the Collectors methods.</p>
-<procedure>
+<procedure title="Java Collectors API - Basics" collapsible="true">
 <tabs>
 <tab title="Java Collectors API | Key Characteristics">
 <list>
@@ -1040,7 +1040,7 @@ collectors</code>,
 <p>Having defined a set of characteristic concepts about the Collectors API, its pros and cons, it is time now to 
 analyze how it works internally, and for this I will turn to the Java API Documentation Version 21, specifically to 
 the <code>Interface Collector{T,A,R} reference guide</code></p>
-<procedure>
+<procedure title="Java Collection APi—Type parameters" collapsible="true">
 <tabs>
 <tab title="Type Parameters | What do they Mean?">
 <p>The Java Collectors API, and underneath the interface Collector is defined by a trio of parameter types which 
@@ -1181,8 +1181,16 @@ public class Example{
                 }
             };
             arrayListBiConsumer.accept(arr, list);
-            //? Step Two: Collect Lists
-            
+            //? Step Three: Combiner for parallel streams
+            Integer[] arr2 = {6,7,8,9,10};
+            var list2 = supplierForIntArrayList.get();
+            arrayListBiConsumer.accept(arr2, list2);
+            BinaryOperator<ArrayList<Integer>> binaryOperator = 
+            (list1, list3) -> {
+                list1.addAll(list3);
+                return list1;
+            };
+            var finalList = binaryOperator.apply(list, list2);
     }
 }
 ```
@@ -1190,10 +1198,1061 @@ public class Example{
 <li><b><format color="CornFlowerBlue">Step 4: Final Transformation (finisher)</format></b>
 After all elements are processed and combined, <code>finisher()</code> is called
 Transforms the final accumulation container (type <code>A</code>) into the result (type <code>R</code>)
-This step is optional - some collectors don't need transformation
-Example: <code>R result = finisher.apply(container);</code> </li> </list>
+This step is optional—some collectors don't need transformation.<br/>
+The following example shows how this works
+
+```Java
+//! Example implementation of a supplier method
+import java.util.*;
+import java.util.function.Supplier;
+public class Example{
+
+    public static void main(String[] args){
+    
+    //! Ejemplo de collector de un Integer[] hacia ArrayList<Integer>
+            //? Step One: Supplier for the holder
+            Supplier<ArrayList<Integer>> supplierForIntArrayList = 
+                                                    ArrayList::new;
+            ArrayList<Integer> list = supplierForIntArrayList.get();
+            //?Step Two: Accumulator for transformation
+            Integer[] arr = {1,2,3,4,5};
+            BiConsumer<Integer[], ArrayList<Integer>> 
+                arrayListBiConsumer = new 
+                    BiConsumer<Integer[], ArrayList<Integer>>() {
+                @Override
+                public void accept(Integer[] integers, 
+                        ArrayList<Integer> arrayList) {
+                    arrayList.addAll(Arrays.asList(integers));
+                }
+            };
+            arrayListBiConsumer.accept(arr, list);
+            //? Step Three: Combiner for parallel streams
+            Integer[] arr2 = {6,7,8,9,10};
+            var list2 = supplierForIntArrayList.get();
+            arrayListBiConsumer.accept(arr2, list2);
+            BinaryOperator<ArrayList<Integer>> binaryOperator = 
+                (list1, list3) -> {
+                list1.addAll(list3);
+                return list1;
+            };
+            var finalList = binaryOperator.apply(list, list2);
+            //? Step Four: Finisher for transformation
+            finalList.forEach(System.out::println);
+    }
+```
+</li>
+</list>
+<p>Having reviewed all these sections code, the following example showcases the simplicity of doing the same 
+thing, to transform an Array stream of two arrays into a single ArrayList</p>
+
+<procedure>
+
+```Java
+
+public class Example{
+    public static void main(String[] args){
+        Integer[] arr1 = {1,2,3,4,5,};
+        Integer[] arr2  ={6,7,8,9,10};
+
+        ArrayList<Integer> finalList = Stream.builder()
+                .add(arr1)
+                .add(arr2)
+                .build()
+                .collect(new Supplier<ArrayList<Integer>>() {
+                             @Override
+                             public ArrayList<Integer> get() {
+                                 return new ArrayList<>();
+                             }
+                         },
+                        new BiConsumer<ArrayList<Integer>, Object>() {
+                            @Override
+                            public void accept(ArrayList<Integer> 
+                                            integers, Object o) {
+                                integers.addAll(
+                                    Arrays.asList( (Integer[])o));
+                            }
+                        }
+                        ,
+                        new BiConsumer<ArrayList<Integer>, 
+                                   ArrayList<Integer>>() {
+                            @Override
+                            public void accept(ArrayList<Integer> 
+                                    integers, 
+                                    ArrayList<Integer> integers2) {
+                                integers.addAll(integers2);
+                            }
+                        });
+        System.out.println("finalList = " + finalList);
+    }
+}
+```
+</procedure>
 </tab>
 </tabs>
+</procedure>
+<p>The Collector implementing class <code>Collectors</code> provides a series of already defined implementations for 
+Collector methods. Methods such as <code>Collectors.toCollection(...), Collector.toList(...) or Collectors.joining(...)
+</code>, are some of the example implementations that allow you to convert a stream to a collection, to a list or 
+joining a string based on a separator.
+<br/><br/>
+The following section will provide an overlook of all the methods existing in the interface, with an implementation 
+example based on anonymous classes rather than lambdas such that everyone can understand the way this works. </p>
+
+<procedure title="Collectors Methods" id="collectors_methods" collapsible="true">
+<list columns="1">
+<li><b><format color="CornFlowerBlue">static {T} Collector{T,?,Double} averagingDouble(ToDoubleFunction{? super T} mapper)</format></b>: This method, as defined in the Java API specification for Java 21.
+<br/>
+<p><i>" Returns a Collector that produces the arithmetic mean of a double-valued function applied to the input 
+elements.</i></p>
+<br/>
+There are three extra considerations to do here <list>
+<li><b><format color="CornFlowerBlue">If no values are present:</format></b> This method returns <code>0</code>.</li>
+<li><b><format color="CornFlowerBlue">Order dependency:</format></b> The average returned value can vary depending upon the order in which values are recorded (order them first).</li>
+<li><b><format color="CornFlowerBlue">Handling NaN or large values:</format></b> If there is a NaN or more values than 2^53, the average is truncated to 2^53, leading to potential issues.</li>
+</list>
+<br/>
+An example implementation of this method is the following snippet
+<br/>
+
+```Java
+var doubleCollector = 
+    Collectors.averagingDouble(
+        new ToDoubleFunction<String>() {
+            @Override
+            public double applyAsDouble(String value) {
+                System.out.println("value.length() = " 
+                + value.length());
+                System.out.println("(value.length() * 2.5) = " 
+                + (value.length() * 2.5));
+                return value.length() * 2.5;
+            }
+        }
+    );
+        String[] arr = {"a", "bb", "ccc"};
+        //! Finding the average value of the array
+        var average = Arrays.stream(arr)
+                .collect(doubleCollector);
+        System.out.println("average = " + average);
+        // Imprime 5 en este caso
+```
+<br/>
+<format color="OrangeRed">OJO:</format> any and all implementations can work with any and all data types, unlike 
+explicit Collector definitions, these can be specialized for any type so long as there is a way to convert it to a 
+Double.
+</li> 
+<li><b><format color="CornFlowerBlue">static {T} Collector{T,?,Double} averagingInt(ToIntFunction{? super T} mapper)
+</format></b>: This function does <code>not</code> have the issues commonly associated with a double average 
+function. Instead <code>it works by using a mapper function to transform inputs to integer values</code>, and then 
+finding the average of their sum.
+<br/>
+An example of this method is defined here
+<br/>
+
+```Java
+var integerCollector =
+                Collectors.averagingInt(
+                        new ToIntFunction<Double>() {
+                            @Override
+                            public int applyAsInt(Double value) {
+                                return value.intValue();
+                            }
+                        }
+                );
+        Double[] arr3 = {1.0, 2.0, 3.0};
+        average = Arrays.stream(arr3).collect(integerCollector);
+        System.out.println("average = " + average);
+        //! Imprime Dos
+```
+</li> 
+<li><b><format color="CornFlowerBlue">static{T} Collector{T,?, Double} averagingLong(ToLongFunction{? super T} 
+mapper)</format></b>: Similarly to its sister methods, the idea of this collector is to collect the data points of a 
+stream and transform them into long values whose average can be calculated. <code>This method has no 
+security or performance issues like Double averaging</code>
+
+An example implementation could be
+<br/>
+
+```Java
+var longCollector = 
+                Collectors.averagingLong(
+                        new ToLongFunction<Double>() {
+                            @Override
+                            public long applyAsLong(Double value) {
+                                return value.longValue();
+                            }
+                        }
+                );
+        Double[] arr3 = {1.0, 2.0, 3.0};
+        average = Arrays.stream(arr3).collect(longCollector);
+        System.out.println("average = " + average);
+
+```
+</li> 
+</list>
+<p>The preceding methods were grouped together due to them being <code>averaging methods</code>, the following 
+collectors methods will provide <code>max, min, joining, counting, reducing, filtering, and teeing</code> streams</p>
+<code>maxBy, minBy, joining, counting, reducing, filtering, teeing </code>
+<list>
+<li><b><format color="CornFlowerBlue">static {T} Collector{T,?,Optional{T}} maxBy(Comparator{? super T} 
+comparator)</format></b>: According to the documentation specified by the Java API, maxBy returns a Collector, 
+that produce the <code>maximal element according to a given comparator</code>. This then means that the Collector 
+iterates over the entire collection, reducing it to the single most largest value.
+
+An example of this would be
+<br/>
+
+```Java
+var maxCollector = 
+                Collectors.maxBy(
+                        new Comparator<Integer>() {
+                            @Override
+                            public int compare(Integer o1, Integer o2) {
+                                return o1.compareTo(o2);
+                            }
+                        }
+                );
+        Integer[] arr = {5, 2, 8, 1, 9, 3, 7};
+        Optional<Integer> maxValue = 
+            Arrays.stream(arr).collect(maxCollector);
+        
+        if (maxValue.isPresent()) {
+            System.out.println("Maximum value = " + maxValue.get());
+        } else {
+            System.out.println("No value present");
+        }
+
+```
+</li> 
+<li><b><format color="CornFlowerBlue">static {T} Collector{T,?,Optional{T} minBy(Comparator{? super T} comparator)
+</format></b>: As with its counterpart for finding the largest value, the idea of <code>reducing the input 
+stream until it finds (through a Collector operation), the smallest value</code>, remains the same in this method. 
+Of course, it is important to note that in general, these methods return an Optional, given that they are optimized 
+for safe empty iteration.
+
+An example of this would be
+<br/>
+
+```Java
+var minCollector = 
+                Collectors.minBy(
+                        new Comparator<Integer>() {
+                            @Override
+                            public int compare(Integer o1, Integer o2) {
+                                return o1.compareTo(o2);
+                            }
+                        }
+                );
+        Integer[] arr = {5, 2, 8, 1, 9, 3, 7};
+        Optional<Integer> minValue = Arrays.stream(arr).collect(minCollector);
+        
+        if (minValue.isPresent()) {
+            System.out.println("Minimum value = " + minValue.get());
+        } else {
+            System.out.println("No value present");
+        }
+
+```
+</li> 
+<li><b><format color="CornFlowerBlue">Joining Methods</format></b>: This method, is quite different to the others we 
+have studied before, as it has an internal listing of <code>other methods</code> that do effectively, the same, but 
+modify the contents differently. These series of methods are meant to <code>concatenate input elements into a 
+String in encounter order</code>.
+
+However, the main difference between them is the way they handle delimiters, and prefix and suffix definitions. For 
+this reason this listing shows each of them in a general approach and presents a full example of their use in the end.
+
+<list>
+<li><format color="Orange">static Collector{CharSequence, ?, String} joining()</format>: Is a method that allows 
+the user to <code>join input elements together (calling their toString() methods effectively) in input order, with 
+no delimiter</code></li>
+
+<li><format color="Orange">static Collector{CharSequence, ?, String} joining(CharSequence delimiter)</format>: 
+Joins elements together with the specified <code>delimiter inserted between each element</code>. For example, 
+joining with "," would result in "element1,element2,element3"</li>
+
+<li><format color="Orange">static Collector{CharSequence, ?, String} joining(CharSequence delimiter, 
+CharSequence prefix, CharSequence suffix)</format>: Joins elements together with the specified <code>delimiter 
+between elements, and wraps the entire result with the given prefix and suffix</code>. For example, with 
+delimiter ",", prefix "[" and suffix "]" would result in "[element1,element2,element3]"</li>
+</list>
+An example usage of these would then be
+<br/>
+
+```Java
+var joiningSimple = 
+                Collectors.joining();
+        
+var joiningDelimiter = 
+                Collectors.joining(
+                        "-|-"
+                );
+
+var joiningDelimiterPrefixSuffix = 
+                Collectors.joining(
+                        "-|-",
+                        "[-",
+                        "-]"
+                );
+
+String[] strings = {"String1", "String2", "String3"};
+        
+String resultSimple = Arrays.stream(strings)
+                    .collect(joiningSimple);
+String resultDelimiter = Arrays
+                         .stream(strings)
+                         .collect(joiningDelimiter);
+String resultComplete = Arrays
+                        .stream(strings)
+                        .collect(
+                        joiningDelimiterPrefixSuffix);
+
+System.out.println("Simple joining: " + resultSimple);
+System.out.println("With delimiter: " + resultDelimiter);
+System.out.println("With delimiter, prefix and suffix: " 
+                                       + resultComplete);
+
+```
+</li> 
+<li><b><format color="CornFlowerBlue">static {T} Collector{T,?, Long} counting()</format></b>: is a simple method 
+which in the end returns a Collector that accepts elements of type <code>T</code>, and <code>counts the number 
+of input elements in the Stream</code>.
+
+An example implementation would be
+<br/>
+
+```Java
+var simpleCounter = 
+                Collectors.counting();
+
+var groupedCounter = 
+                Collectors.groupingBy(
+                        new Function<String, Integer>() {
+                            @Override
+                            public String apply(String str) {
+                                return str.length() + "";
+                            }
+                        },
+                        Collectors.counting()
+                );
+String[] words = {"cat", "dog", "elephant", "bird", 
+                 "lion", "tiger", "bear"};
+        
+Long totalCount = Arrays.stream(words)
+                               .collect(simpleCounter);                             
+Map<String, Long> countByLength = Arrays.stream(words)
+                                  .collect(groupedCounter);
+System.out.println("Simple count of all elements: " 
+                                    + totalCount);
+System.out.println("Count grouped by string length: " 
+                                    + countByLength);
+
+```
+</li> 
+<li><b><format color="CornFlowerBlue">Reducing Methods</format></b>: Another family of methods that we can find in 
+our Collectors class is those that reduce streams of elements at the end (as terminal operations). These methods 
+have three main implementations that are to be discussed below 
+<br/>
+<list>
+<li><format color="Orange">static {T} Collector{T,?, Optional{T}} reducing(BinaryOperator{T} op)</format>: is a 
+method that performs <code>a reduction on its input elements under a specified BinaryOperator</code>. The aim of this 
+class is then to for example be used in <code>grouping operations</code>, such that they can be used as reductions 
+in SQL-like group by operations. In general, these can be used anywhere, but for simple reductions, it is 
+<code>recommended to use Stream.reduce(BinaryOperator) instead</code>.</li>
+
+<li><format color="Orange">static {T} Collector{T,?,T} reducing(T identity, BinaryOperator{T} op)</format>: 
+performs <code>a reduction operation using the provided identity value as the initial value and the BinaryOperator 
+for combining elements</code>. Unlike the previous version, this returns a direct value of type T instead of an 
+Optional since the identity value ensures a result will always exist.</li>
+
+<li><format color="Orange">static {T,U} Collector{T,?,U} reducing(U identity, Function{? super T,? extends U} mapper, 
+BinaryOperator{U} op)</format>: performs the most complex reduction, where it <code>first maps the input elements 
+to a different type U using the mapper function, then performs the reduction using the provided identity value and 
+BinaryOperator</code>. This is useful when you need to transform elements before reducing them, combining mapping 
+and reduction into a single operation.</li>
+</list>
+
+An example implementation of these methods would be the following
+
+```Java
+var simpleReducer = 
+                Collectors.reducing(
+                        new BinaryOperator<String>() {
+                            @Override
+                            public String apply(String s1, 
+                                             String s2) {
+                                return s1.length() > 
+                                       s2.length() ? s1 : s2;
+                            }
+                        }
+                );
+
+var identityReducer = 
+                Collectors.reducing(
+                        "DEFAULT",
+                        new BinaryOperator<String>() {
+                            @Override
+                            public String apply(String s1, 
+                                                String s2) {
+                                return s1.length() 
+                                       > s2.length() ? s1 : s2;
+                            }
+                        }
+                );
+
+var mappingReducer = 
+                Collectors.reducing(
+                        0,
+                        new Function<String, Integer>() {
+                            @Override
+                            public Integer apply(String s) {
+                                return s.length();
+                            }
+                        },
+                        new BinaryOperator<Integer>() {
+                            @Override
+                            public Integer apply(Integer i1, 
+                                               Integer i2) {
+                                return Math.max(i1, i2);
+                            }
+                        }
+                );
+
+// Complex scenario: Group words by their first letter and 
+// find the longest word in each group
+String[] words = {"apple", "banana", "ant", 
+                   "bear", "cat", "cherry"};
+        
+Map<Character, Optional<String>> groupedLongestWordsOptional = 
+        Arrays.stream(words)
+             .collect(Collectors.groupingBy(
+                     str -> str.charAt(0),
+                     simpleReducer
+             ));
+
+Map<Character, String> groupedLongestWordsWithDefault = 
+        Arrays.stream(words)
+             .collect(Collectors.groupingBy(
+                       str -> str.charAt(0),
+                       identityReducer
+                  ));
+
+Map<Character, Integer> groupedMaxLengths =     
+        Arrays.stream(words)
+             .collect(Collectors.groupingBy(
+                      str -> str.charAt(0),
+                       mappingReducer
+             ));
+
+System.out.println("Longest words by letter (Optional): " 
+                            + groupedLongestWordsOptional);
+System.out.println("Longest words by letter (with default): " 
+                            + groupedLongestWordsWithDefault);
+System.out.println("Max word length by letter: " 
+                                         + groupedMaxLengths);
+
+```
+Which would output 
+```Markdown
+Longest words by letter (Optional): {a=Optional[apple], b=Optional[banana], c=Optional[cherry]}
+Longest words by letter (with default): {a=apple, b=banana, c=cherry}
+Max word length by letter: {a=5, b=6, c=6}
+
+```
+</li> 
+<li><b><format color="CornFlowerBlue">static {T,A,R}> Collector{T,?,R} filtering (Predicate{? super T} 
+predicate, Collector{? super T, A, R} downstream)</format></b>: is a method that allows you to <code>adapt 
+a Collector to one accepting elements of the same type T by applying the predicate to each input element, 
+and only accumulating if the predicate returns true.</code> This then means that this method can be used to further 
+filter a set of data points passed into a stream. For example, we can use it to filter and then aggregate 
+employees based on gender, salary, department, etc.
+
+An example of this method would be.
+```Java
+static class Employee {
+        private String name;
+        private String department;
+        private double salary;
+
+        public Employee(String name, String 
+                department, double salary) {
+            this.name = name;
+            this.department = department;
+            this.salary = salary;
+        }
+
+        public String getName() { return name; }
+        public String getDepartment() { return department; }
+        public double getSalary() { return salary; }
+    }
+
+
+    public static void method2(){
+        List<Employee> employees = Arrays.asList(
+                new Employee("John", "IT", 60000),
+                new Employee("Alice", "IT", 45000),
+                new Employee("Bob", "HR", 55000),
+                new Employee("Carol", "HR", 40000),
+                new Employee("Dave", "Finance", 70000),
+                new Employee("Eve", "Finance", 48000)
+        );
+
+        Map<String, List<String>> highestSalaryByDepartment =
+                employees.stream()
+                        .collect(Collectors.filtering(
+                            new Predicate<Employee>() {
+                            @Override
+                            public boolean test(Employee employee) {
+                                return employee.getSalary() 
+                                                    > 50_000;
+                            }
+                        },
+                        Collectors.groupingBy(
+                            new Function<Employee, String>() {
+                            @Override
+                            public String apply(Employee employee) {
+                                return employee.getDepartment();
+                            }
+                        }, Collectors.mapping(new 
+                            Function<Employee, String>() {
+                            @Override
+                            public String apply(Employee employee) {
+                                return employee.getName() + "($" + 
+                                employee.getSalary() + ")";
+                            }
+                        }, Collectors.toList()))));
+        System.out.println("highestSalaryByDepartment = " 
+                            + highestSalaryByDepartment);
+    }
+```
+<p>The previous example, not only showed a clear way on how to implement this filtering method in a complete way, it 
+additionally showed various downstream functions of the stream classes. Specifically those related to grouping and 
+mapping, methods which will be discussed in this section too.
+</p>
+</li> 
+<li><b><format color="CornFlowerBlue">static {T,R1,R2,R} Collector{T,?,R} teeing (Collector{? supr T,?,R1} 
+downstream1, Collector{? super T, ?, R2} downstream2, BiFunction{? super R1, ? super R2, R} merger) </format></b>: 
+Based on the signature of this method, it would be first beneficial for us to define the type parameters that it 
+takes, what these parameters it takes represent and what is the expected output of this method. For this the 
+following listing is presented
+<br/>
+<list>
+<li><format color="Orange">{T}</format>: parameter type that represents the type of the input items</li>
+<li><format color="Orange">{R1}</format>: parameter that represents the result type of the first Collector</li>
+<li><format color="Orange">{R2}</format>: parameter that represents the result type of the second Collector</li>
+<li><format color="Orange">{R}</format>: parameter that represents the final result type after merging R1 and R2</li>
+</list>
+<br/>
+This method, as defined in the Java doc <code>returns a Colector that is a composite of two downstream collectors. 
+Every element is passed to the resulting collecotr is processed by both downstream collectors, then their results 
+are merged using he specified merge function into the final result
+</code>
+<br/>
+<p>The idea of this method follows these sequential steps:</p>
+
+<list>
+<li><b>Step 1—Supplier:</b> <code>Creates a result container</code> that contains the result containers from both collectors</li>
+
+<li><b>Step 2—Accumulator:</b> <code>Processes each input element</code> by:
+    <list>
+    <li>Calling the first collector's accumulator with its container and the input</li>
+    <li>Calling the second collector's accumulator with its container and the input</li>
+    </list>
+</li>
+
+<li><b>Step 3—Combiner:</b> <code>Merges partial results</code> by:
+    <list>
+    <li>Calling each collector's combiner with their respective result containers</li>
+    <li>Combining the partial results from parallel processing</li>
+    </list>
+</li>
+
+<li><b>Step 4—Finisher:</b> <code>Produces the final result</code> by:
+    <list>
+    <li>Calling each collector's finisher with their result containers</li>
+    <li>Using the merger function to combine both results into the final output</li>
+    </list>
+</li>
+</list>
+<p>Based on this explanation then it is straightforward to see that this is simply a double application of Collectors 
+on a 
+single input data frame and then manipulating them to combine these values into a single result.<br/><br/>
+The following example showcases the use of this method</p>
+<br/>
+
+```Java
+List<Employee> employees = Arrays.asList(
+                new Employee("Aaron", "IT", 60000),
+                new Employee("Alice", "IT", 45000),
+                new Employee("Bob", "HR", 55000),
+                new Employee("Carol", "HR", 40000),
+                new Employee("Dave", "Finance", 70000),
+                new Employee("Eve", "Finance", 48000)
+        );
+
+        Map<String, List<String>> salariesByLetter =
+                employees.stream()
+                        .collect(
+                                Collectors.teeing(
+                                        Collectors.groupingBy(
+                                                new Function<Employee, String>() {
+                                                    @Override
+                                                    public String apply(Employee employee) {
+                                                        return String.valueOf(employee.getName().charAt(0));
+                                                    }
+                                                }
+                                        ),
+                                        Collectors.groupingBy(
+                                                new Function<Employee, String>() {
+                                                    @Override
+                                                    public String apply(Employee employee) {
+                                                        return String.valueOf(employee.getName().charAt(0));
+                                                    }
+                                                },
+                                                Collectors.mapping(
+                                                        new Function<Employee, String>() {
+                                                            @Override
+                                                            public String apply(Employee employee) {
+                                                                return "Department=" + employee.getDepartment() + ", Salary=" + employee.getSalary();
+                                                            }
+                                                        },
+                                                        Collectors.toList()
+                                                )
+                                        ),
+                                        (groupedByLetter, mappedSalaries) -> {
+                                            Map<String, List<String>> result = new HashMap<>();
+
+                                            groupedByLetter.forEach((key, employeesInGroup)
+                                                    -> {
+                                                result.put(key, mappedSalaries.get(key));
+                                            });
+
+                                            return result;
+                                        }));
+        System.out.println("salariesByLetter = " + salariesByLetter);
+
+```
+</li>  
+</list>
+<code>GroupingBy Methods</code>
+<p>The grouping by methods are some of the most common methods used in the Stream API, they have also been scattered 
+widely around the examples presented above. These have included mentions of the groupingBy methods in some simple 
+and yet verbose ways such that they can be easily understood, however now is their turn for an in depth analysis.
+</p>
+<list>
+<li><b><format color="CornFlowerBlue">GroupingBy Methods</format></b>: 
+<list>
+<li><format color="Orange">static {T,K} Collector {T, ? ConcurrentMap{K, List{T}}} groupingByConcurrent
+(Function{? super T, ? extends K} classifier)</format>: <code>returns a concurrent Collection implementing a 
+cascade "group by" operation on input elements of type T, grouping elements according to a classification 
+function, and then performing a reduction operation on the values associated with a given key using the 
+specified downstream Collector.</code>
+<br/>
+This the means that this method concurrently applies a classifier to group elements based on a criteria. This 
+criteria takes the input type of the stream, <code>(e.g., an Employee class abstraction)</code>, and extracts 
+content out of it through an anoymous class or lambda to classify by. 
+<br/>
+The resulting output of this group by method is a ConcurrentMap implementation, that can be taken and returned as a 
+normal collector operation, or operated further downstream.
+<br/>
+An example of this would be.
+
+<procedure collapsible="true" title="Simple GroupByConcurrent Examples">
+
+```Java
+
+        class Employee {
+            private String name;
+            private String department;
+            private double salary;
+
+            public Employee(String name,
+                            String department,
+                            double salary) {
+                this.name = name;
+                this.department = department;
+                this.salary = salary;
+            }
+
+            // Getters
+            public String getName()
+                         { return name; }
+            public String getDepartment()
+                         { return department; }
+            public double getSalary()
+                         { return salary; }
+        }
+
+                List<Employee> employees = Arrays.asList(
+                        new Employee("Alice", "HR", 51000),
+                        new Employee("Bob", "IT", 60000),
+                        new Employee("Charlie", "HR", 45000),
+                        new Employee("David", "IT", 65000),
+                        new Employee("Eve", "Finance", 55000)
+                );
+
+                // Example 1: Simple groupingByConcurrent by department
+                ConcurrentMap<String, List<Employee>> byDepartment = employees.parallelStream()
+                        .collect(Collectors.groupingByConcurrent(Employee::getDepartment));
+
+                // Example 2: Complex grouping using teeing
+                record DepartmentStats(List<String> highPaidEmployees, Double averageSalary) {}
+
+                ConcurrentMap<String, DepartmentStats> departmentStats = employees.parallelStream()
+                        .collect(Collectors.groupingByConcurrent(
+                                new Function<Employee, String>() {
+                                    @Override
+                                    public String apply(Employee employee) {
+                                        return employee.getDepartment();
+                                    }
+                                },
+                                Collectors.teeing(
+                                        Collectors.filtering(
+                                                new Predicate<Employee>() {
+                                                    @Override
+                                                    public boolean test(Employee employee) {
+                                                        return employee.getSalary() > 50_000;
+                                                    }
+                                                },
+                                                Collectors.mapping(
+                                                        new Function<Employee, String>() {
+                                                            @Override
+                                                            public String apply(Employee employee) {
+                                                                return employee.getName();
+                                                            }
+                                                        }, Collectors.toList())
+                                        ),
+                                        Collectors.averagingDouble(new ToDoubleFunction<Employee>() {
+                                            @Override
+                                            public double applyAsDouble(Employee value) {
+                                                return value.getSalary();
+                                            }
+                                        }),
+                                        DepartmentStats::new
+                                )
+                        ));
+
+                // Example 3: GroupingByConcurrent with downstream collector
+                ConcurrentMap<String, Double> departmentTotalSalary = employees.parallelStream()
+                        .collect(Collectors.groupingByConcurrent(
+                                Employee::getDepartment,
+                                Collectors.collectingAndThen(
+                                        Collectors.summingDouble(Employee::getSalary),
+                                        total -> Math.round(total * 100.0) / 100.0
+                                )
+                        ));
+
+                // Print results
+
+                System.out.println("Simple Grouping by Department:");
+                byDepartment.forEach((dept, emps) ->
+                        System.out.println(dept + ": " +
+                                emps.stream().map(Employee::getName)
+                                        .collect(Collectors.toList())));
+
+                System.out.println("\nComplex Grouping with Stats:");
+                departmentStats.forEach((dept, stats) ->
+                        System.out.println(dept + " -> High paid: " + stats.highPaidEmployees() +
+                                ", Avg Salary: " + stats.averageSalary()));
+
+                System.out.println("\nGrouping with Total Salaries:");
+                departmentTotalSalary.forEach((dept, total) ->
+                        System.out.println(dept + ": $" + total));
+
+```
+</procedure>
+</li>
+<li><format color="Orange">static {T,K} Collector {T, ?, Map{K, List{T}}} groupingBy
+(Function{? super T, ? extends K} classifier)</format>: <code>returns a Collection implementing a 
+cascade "group by" operation on input elements of type T, grouping these elements into a Map where the 
+keys are derived using the classification function.</code>
+<br/>
+This means that this method applies a classifier to group elements based on a criteria. 
+This criteria takes the input type of the stream, <code>(e.g., an Employee class abstraction)</code>, and extracts 
+content out of it through an anonymous class or lambda to classify by.  
+<br/>
+The resulting output of this `groupingBy` method is a `Map` implementation, where the grouped elements can be 
+collected into lists, manipulated further using downstream collectors, or transformed to derive additional information.
+<br/>
+An example of this would be:
+
+<procedure collapsible="true" title="Simple GroupingBy Examples">
+
+```Java
+
+        class Employee {
+            private String name;
+            private String department;
+            private double salary;
+
+            public Employee(String name, String department, double salary) {
+                this.name = name;
+                this.department = department;
+                this.salary = salary;
+            }
+
+            // Getters
+            public String getName() {
+                return name;
+            }
+
+            public String getDepartment() {
+                return department;
+            }
+
+            public double getSalary() {
+                return salary;
+            }
+        }
+
+        public class GroupingExample {
+            public static void main(String[] args) {
+                List<Employee> employees = Arrays.asList(
+                        new Employee("Alice", "HR", 51000),
+                        new Employee("Bob", "IT", 60000),
+                        new Employee("Charlie", "HR", 45000),
+                        new Employee("David", "IT", 65000),
+                        new Employee("Eve", "Finance", 55000)
+                );
+
+                // Example 1: Simple groupingBy by department
+                Map<String, List<Employee>> byDepartment = employees.stream()
+                        .collect(Collectors.groupingBy(Employee::getDepartment));
+
+                System.out.println("Grouping by Department:");
+                byDepartment.forEach((dept, emps) ->
+                        System.out.println(dept + ": " +
+                                emps.stream().map(Employee::getName).collect(Collectors.toList())));
+            }
+        }
+
+```
+</procedure>
+
+<procedure collapsible="true" title="Grouping With Additional Transformations">
+
+```Java
+        // Example 2: Grouping by department and collecting employee names
+        Map<String, List<String>> employeesByName = employees.stream()
+                .collect(Collectors.groupingBy(
+                        Employee::getDepartment,
+                        Collectors.mapping(Employee::getName, Collectors.toList())
+                ));
+
+        System.out.println("\nGrouping employee names by department:");
+        employeesByName.forEach((dept, names) ->
+                System.out.println(dept + ": " + names));
+```
+**Output:**
+Grouping employee names by department: HR: [Alice, Charlie] IT: [Bob, David] Finance: [Eve]
+
+</procedure>
+
+<procedure collapsible="true" title="Group by with Aggregated Statistics">
+
+```Java
+
+        // Example 3: Group by department and calculate total salary for each group
+        Map<String, Double> departmentTotalSalary = employees.stream()
+                .collect(Collectors.groupingBy(
+                        Employee::getDepartment,
+                        Collectors.summingDouble(Employee::getSalary)
+                ));
+
+        System.out.println("\nGrouping by Department with Total Salaries:");
+        departmentTotalSalary.forEach((dept, total) ->
+                System.out.println(dept + ": $" + total));
+```
+**Output:**
+Grouping by Department with Total Salaries: HR: 96000.0 IT:125000.0 Finance: $55000.0
+</procedure>
+
+<procedure collapsible="true" title="Grouping with Custom Statistics">
+
+```Java
+
+        // Custom object for storing statistics
+        class DepartmentStats {
+            private List<String> employeeNames;
+            private double averageSalary;
+
+            public DepartmentStats(List<String> employeeNames, double averageSalary) {
+                this.employeeNames = employeeNames;
+                this.averageSalary = averageSalary;
+            }
+
+            @Override
+            public String toString() {
+                return "Employees: " + employeeNames + ", Avg Salary: $" + averageSalary;
+            }
+        }
+
+        // Example 4: Group by department and calculate custom statistics
+        Map<String, DepartmentStats> departmentStats = employees.stream()
+                .collect(Collectors.groupingBy(
+                        Employee::getDepartment,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                emps -> new DepartmentStats(
+                                        emps.stream().map(Employee::getName).collect(Collectors.toList()),
+                                        emps.stream().mapToDouble(Employee::getSalary).average().orElse(0)
+                                )
+                        )
+                ));
+
+        System.out.println("\nComplex Grouping with Custom Stats:");
+        departmentStats.forEach((dept, stats) ->
+                System.out.println(dept + " -> " + stats));
+```
+**Output:**
+Complex Grouping with Custom Stats: HR -> Employees: [Alice, Charlie], Avg Salary: 48000.0 IT -> Employees: [Bob, David], Avg Salary:62500.0 Finance -> Employees: [Eve], Avg Salary: $55000.0
+
+</procedure>
+</li>
+<li><b><format color="Orange">static {T,K, D, A,M} Collector{T, ?, Map/ConcurrentMap{K, D}} 
+groupingBy/groupingByConcurrent(Function{? super T, ? extends K} classifier, Supplier{M} mapFactory, Collector{? 
+super T,A,D} downstream)</format></b>: Although the title of this section was long, it is in an effort of reducing 
+the complexity of handling this section. These two methods have the same signature and the same innerworking, only 
+that their difference is that <code>one is used in sequential data streaming and the other on concurrent 
+data streaming</code>.
+<br/>
+Particularly, these two are defined a returning a collector that implements a <code>cascade "group by" operation 
+on input elements of type T</code>, on which it groups according to a classifier, performing reductions on the 
+values given a key specified by the downstream collector.
+<br/>
+Effectively, this means that these methods are like our normal grouping by, only that these explicitly allow us to 
+define the type of map we would like as well as the type of downstream operation that we would like to do.
+<br/>
+An example of this would be.
+<br/>
+<procedure title="groupingBy With Three Parameters" collapsible="true">
+
+```Java
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
+class Employee {
+    private String name;
+    private String department;
+    private double salary;
+    private int yearsOfService;
+
+    public Employee(String name, String department, double salary, int yearsOfService) {
+        this.name = name;
+        this.department = department;
+        this.salary = salary;
+        this.yearsOfService = yearsOfService;
+    }
+
+    // Getters
+    public String getName() { return name; }
+    public String getDepartment() { return department; }
+    public double getSalary() { return salary; }
+    public int getYearsOfService() { return yearsOfService; }
+}
+
+class DepartmentSummary {
+    private double totalSalary;
+    private int employeeCount;
+    private double avgYearsOfService;
+
+    public DepartmentSummary(double totalSalary, int employeeCount, double avgYearsOfService) {
+        this.totalSalary = totalSalary;
+        this.employeeCount = employeeCount;
+        this.avgYearsOfService = avgYearsOfService;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Total Salary: $%.2f, Employees: %d, Avg Years: %.1f",
+                totalSalary, employeeCount, avgYearsOfService);
+    }
+}
+
+public class AdvancedGroupingExample {
+    public static void main(String[] args) {
+        // Create a large sample dataset
+        List<Employee> employees = Arrays.asList(
+            new Employee("Alice", "HR", 50000, 5),
+            new Employee("Bob", "IT", 60000, 3),
+            new Employee("Charlie", "HR", 45000, 2),
+            new Employee("David", "IT", 65000, 7),
+            new Employee("Eve", "Finance", 55000, 4),
+            new Employee("Frank", "IT", 70000, 6),
+            new Employee("Grace", "HR", 52000, 3),
+            new Employee("Henry", "Finance", 58000, 5)
+        );
+
+        // Example 1: groupingBy with three parameters
+        Map<String, Set<Employee>> departmentEmployees = employees.stream()
+            .collect(Collectors.groupingBy(
+                Employee::getDepartment,                // classifier function
+                LinkedHashMap::new,                     // map factory
+                Collectors.filtering(                   // downstream collector
+                    e -> e.getSalary() > 50000,
+                    Collectors.toSet()
+                )
+            ));
+
+        // Example 2: groupingByConcurrent with three parameters
+        ConcurrentMap<String, DepartmentSummary> departmentStats = employees.parallelStream()
+            .collect(Collectors.groupingByConcurrent(
+                Employee::getDepartment,                // classifier function
+                ConcurrentHashMap::new,                // concurrent map factory
+                Collectors.collectingAndThen(          // downstream collector
+                    Collectors.teeing(
+                        Collectors.teeing(
+                            Collectors.summingDouble(Employee::getSalary),
+                            Collectors.counting(),
+                            (salary, count) -> new Pair<>(salary, count)
+                        ),
+                        Collectors.averagingDouble(Employee::getYearsOfService),
+                        (pair, avgYears) -> new DepartmentSummary(
+                            pair.first(),
+                            (int) pair.second().longValue(),
+                            avgYears
+                        )
+                    ),
+                    summary -> summary
+                )
+            ));
+
+        // Print results
+        System.out.println("Grouped Employees (salary > 50000) by Department:");
+        departmentEmployees.forEach((dept, emps) -> {
+            System.out.println(dept + ":");
+            emps.forEach(emp -> System.out.printf("  - %s ($%.2f)%n", 
+                emp.getName(), emp.getSalary()));
+        });
+
+        System.out.println("\nDepartment Statistics (Concurrent):");
+        departmentStats.forEach((dept, stats) -> 
+            System.out.println(dept + ": " + stats));
+    }
+}
+
+// Helper class for paired values
+class Pair<T, U> {
+    private final T first;
+    private final U second;
+
+    public Pair(T first, U second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    public T first() { return first; }
+    public U second() { return second; }
+}
+
+```
+</procedure>      
+</li> 
+</list>
+
+</li> 
+</list>
 </procedure>
 
 
