@@ -7,8 +7,8 @@
                  start-page="starter-topic.md">
 
     <toc-element topic="starter-topic.md"/>
-    <toc-element toc-title="Section One ">
+    <toc-element toc-title="Section One">
         <toc-element topic="Class-1-Tuesday-14th-Lambdas-and-Streams.md"/>
-        <toc-element topic="Clas-2-Thursday-16th-Streams-A-Closer-Look.md"/>
+        <toc-element topic="Class-2-Thursday-16th-Streams-A-Closer-Look.md"/>
     </toc-element>
 </instance-profile>
