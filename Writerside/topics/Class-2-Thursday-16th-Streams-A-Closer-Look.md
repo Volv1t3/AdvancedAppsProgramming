@@ -11,7 +11,7 @@ collecting-reducing the data that is returned by a Stream into objects or data s
 <br/><br/>
 Streams offer various methods to both <code>parallelize, alter, generate, and operate </code> on data sources like 
 <code>data structures, user defined structures, as well as files, zip files, or even JAR files</code>.
-<br/><br/>
+<br/><br/> 
 Based on the information provided on this course we will review some of the methods defined in te Stream Interface, 
 as intermediate operations. <code>(filtering, processing, and modification operations that are done over a 
 mutable Stream</code>. After these operations, a <code>terminal operation</code>, is defined as an operation that 
@@ -58,7 +58,7 @@ depending on an internal classification. We begin with <code>non-short-circuit s
 operations</code>
 </p>
 
-##### Intermediate Operations —  Basic Operations
+##### Intermediate Operations — Basic Operations
 <tldr><i>The main idea of these operations is that they, as they are stateless <b>do not 
 retain state of previously seen elements when processing a new element</b>, therefore each 
 element is reviewed independently.</i></tldr>
@@ -72,7 +72,7 @@ implementation are kept to a minimum to retain simplicity.
 
 <procedure collapsible="true" title="Intermediate Operations | Basic Operations">
 <list>
-<li><b><format color="CornFlowerBlue">filter(Predicate &lt; ? super T &gt; predicate)
+<li><b><format color="CornFlowerBlue"><p>filter(Predicate &lt; ? super T &gt; predicate)</p>
 </format></b>: is an intermediate operation focused on filtering information based on a 
 predicate definition (a functional interface that returns a boolean true or false depending on 
 its internal condition.
@@ -85,7 +85,7 @@ List<Integer> evenNumbers = numbers.stream()
 System.out.println(evenNumbers); // Output: [2, 4, 6]
 ```
 </li> 
-<li><b><format color="CornFlowerBlue">map(Function &lt; ? super T, ? extends R &gt; mapper)
+<li><b><format color="CornFlowerBlue"><p>map(Function &lt; ? super T, ? extends R &gt; mapper)</p>
 </format></b>: intermediate operation that takes a stream of type <code>T</code>, and transform 
 this into a stream of type <code>R</code> depending on a mapper function instance (this is 
 another functional interface).
@@ -190,7 +190,6 @@ System.out.println(Arrays.toString(flatLongs.toArray()));
 // Output: [1, 2, 3, 4]
 ```
 </li>
-
 <li><b><format color="CornFlowerBlue">peek(Consumer &lt; ? super T &gt; action)</format></b>: 
 performs an action on each element as it passes through the stream, useful for debugging.
 
@@ -205,6 +204,248 @@ List<String> result = names.stream()
 // Processing: Charlie
 ```
 </li>
+</list>
+<p>Additionally to this family of operations, there is a set of operations called <code>map Multi</code>, which will 
+be discussed in the following list elements. However, it is important to gather a basic idea of how these are 
+implemented and what they do first
+</p>
+<note><i>A Java mapMulti method in Streams is a method that <code>takes in a BiConsumer</code>,and applies it in 
+such a way that it replaces each element of a Stream with <code>one or more elements</code>
+</i></note>
+<p>A mapMulti method takes in, as mentioned, a <code>BiConsumer in the form of a Biconsumer&lt;? super T, ? 
+ super Consumer&lt;R&gt;&gt;)</code>, where the type <code>R</code> represents the return type of the resulting 
+stream after performing the mapping operation.
+<br/><br/>
+The idea behind it is that the mapper function replaces every value in the original stream by <code>calling 
+the consumer argument of the BiConsumer</code>, with them. Therefore, when a pipeline invokes the mapper argument or 
+an element, it computes replacement elements for it (zero, one, or more), and then consumes them.
+</p>
+<list>
+<li><b><format color="CornFlowerBlue"><p>default &lt;R&gt; Stream&lt;R&gt; mapMulti(BiConsumer&lt;? super T,? super 
+Consumer &lt;R&gt;&gt; mapper)</p></format></b>:The idea of this function is 
+to apply a multi-value transformation that effectively <code>grabs an original value through the stream and 
+applies one or more variations through methods in the consumer</code>.
+
+This, effectively, means that we will transform each value in a one-to-one or one-to-many version based on the
+consumer specification.
+
+An example of this would be.
+
+```Java
+List<String> originalStrings =
+                Arrays.asList("Hello", "World",
+                              "Java", "Programming");
+List<String> transformedStrings  =
+       originalStrings.stream()
+             .mapMulti((String s, 
+             java.util.function.Consumer<String> consumer) -> {
+                    consumer.accept(s.toUpperCase());
+             }).toList();
+System.out.println("transformedStrings = " + transformedStrings);
+```
+
+<p>Something that is interesting about these methods is the way in which you provide the Consumer instance. The 
+transformation done to the data does not take a <code>Function or any other mapper functional interface</code>, 
+rather it takes in a consumer in which we can define everything we would lke to work on.
+<br/><br/>
+In the block of code above, we can see that the lambda method defining our execution technique, effectively 
+creates a <code>one-to-one mapping relationship.</code>, the idea of this method is not specifically to do this but 
+the idea is to see how it works. in general, the lambda requires you to define two things <code>the parameter going 
+in</code>, and the way it is meant to be mapped to another, and the consumer instance which is going to be used. 
+Generally, <code>a consumer is a functional interface that basically consumes a value and does not return 
+anything</code>. This is the backbone of the mapMulti implementation.
+<br/><br/>
+The main way this method works is not by effectively receiving an implemented version of the Consumer, rather it 
+expects you to do all your logic within the parameter that can be passed into the Consumer. This then means that we 
+are capable of executing <code>one-to-one, or one-to-many relationships within this section</code>
+This example of code showcases this idea
+</p>
+
+```Java
+List<String> transformedStringsUpperLOwer =
+    originalStrings.stream()
+    .mapMulti(new BiConsumer<String, 
+               Consumer<String>>() {
+            @Override
+            public void accept(String s, 
+                Consumer<String> objectConsumer) {
+                objectConsumer.accept(s.toLowerCase());
+                objectConsumer.accept(s.toUpperCase());
+                objectConsumer.accept(s.repeat(2));
+            }
+        }).toList();
+System.out.println("transformedStringsUpperLOwer = " 
+                    + transformedStringsUpperLOwer);
+                    
+List<String> input = 
+      List.of("apple", "pear", "peach", "banana");
+List<String> result = input.stream()
+        .<String>mapMulti((element, consumer) -> {
+            if (element.length() % 2 == 0) {
+                consumer.accept(element + "-1");
+                consumer.accept(element + "-2");
+            }
+        })
+        .collect(Collectors.toList());
+System.out.println(result);
+                   
+```
+
+<p>Effectively then, the idea of this method is to use the consumer interface to accept any all 
+modifications that can be mapped to the type of the input, using it to receive the values and 
+store them.</p>
+</li> 
+<li><b><format color="CornFlowerBlue"> <p>default DoubleStream mapMultiToDouble(BiConsumer&lt;? 
+super T, ? super 
+DoubleConsumer&gt; mapper)</p></format></b>: The idea of this method is similar to 
+those that we 
+have studied before, like we did, <code>converting from a value to a double value</code>, we 
+are going to do the same for a mapping of one to many double values. The idea here however is 
+that it will take what is known as a <code>DoubleConsumer</code>, which is an specialization 
+of the general consumer.
+
+The work methodology of methods such as the DoubleConsumer, or as we will see LongConsumer or 
+IntConsumer is to be more concrete implementations of the consumer such that you are forced to 
+provide an input value of the type of the interface. Since the methodology doesn't change much 
+from the example above in the simple mapMulti example, we shall take a look at some more 
+examples here.
+
+```Java
+List<Double> numbersTimesTwo = 
+    Stream.iterate(1, new UnaryOperator<Integer>() {
+            @Override
+            public Integer apply(Integer integer) {
+                return integer + 1;
+            }
+    })
+    .limit(10)
+    .mapMultiToDouble(new BiConsumer<Integer, DoubleConsumer>() {
+            @Override
+            public void accept(Integer integer, 
+                              DoubleConsumer doubleConsumer)
+            {
+                doubleConsumer.accept(integer.doubleValue() 
+                                    * integer.doubleValue());
+            }
+        }).boxed().toList();
+        System.out.println("numbersTimesTwo = " 
+        + numbersTimesTwo);
+ // numbersTimesTwo = [1.0, 4.0, 9.0, 16.0, 25.0, 36.0, 
+ // 49.0, 64.0, 81.0, 100.0]
+ 
+ //! Second example with an inner class
+ //! Creating a series of employees
+List<Employee> employees = List.of(
+                new Employee("John", 25),
+                new Employee("Jane", 30),
+                new Employee("Jack", 35),
+                new Employee("Jill", 40),
+                new Employee("Joe", 45)
+);
+OptionalDouble duplicateValueAndAverage =
+     employees
+     .stream()
+     .mapMultiToDouble(new BiConsumer<Employee, DoubleConsumer>() {
+          @Override
+          public void accept(Employee employee, 
+                DoubleConsumer doubleConsumer) {
+               doubleConsumer.accept(employee.age); //! First copy
+               doubleConsumer.accept(employee.age); //! Second copy
+          }
+     }).average();
+ duplicateValueAndAverage.ifPresent(System.out::println);
+ 
+private static class Employee{
+        String name;
+        int age;
+        public Employee(String name, int age) {
+            this.name = name;
+            this.age = age;
+        }
+}
+ 
+```
+
+</li> 
+<li><b><format color="CornFlowerBlue"><p>default IntStream mapMultiToInt(BiConsumer&lt;? super T, ? 
+super IntConsumer&gt; mapper)</p></format></b>: <p>the way this method works is 
+similarly 
+to the 
+double map multi implementation, in which it takes an input stream with values of some type, and 
+through an IntConsumer will transform them into a series of integer values (most likely 
+primitive ints) with which the program will form an IntStream instance for us to use.<br/><br/>
+The behavior of this consumer is as before, it will take whatever we till it to consume, and
+then create a stream based on it without us ever seeing what happened (underneath it uses a
+Spined Buffer and AFAIK, it was taking the values from the consumer
+either way). The values that it will take from us surely have to be of type `int` for them to
+work with the consumer. Below are some examples of how this method works </p>
+
+
+```Java
+Optional<Integer> sumOfEvenIntegersUpTo100Doubled = 
+        Stream.iterate(1, new Predicate<Integer>() {
+            @Override
+            public boolean test(Integer integer) {
+                return integer <= 100;
+            }
+        }, new UnaryOperator<Integer>() {
+            @Override
+            public Integer apply(Integer integer) {
+                return integer + 1;
+            }
+        }).mapMultiToInt(new BiConsumer<Integer, IntConsumer>() {
+            @Override
+            public void accept(Integer integer, 
+                        IntConsumer intConsumer) {
+                for(Integer integer1 : List.of(integer, integer)){
+                    System.out.println("integer1 = " + integer1);
+                    intConsumer.accept(integer1);
+                }
+            }
+        }).boxed().reduce(Integer::sum);
+System.out.println("sumOfDuplicatedAges = " 
+        + sumOfEvenIntegersUpTo100Doubled);
+```
+</li> 
+<li><b><format color="CornFlowerBlue"><p>default LongStream mapMultiToLong(BiConsumer ? super T, 
+? super IntConsumer mapper)</p>
+</format></b>: 
+<p>
+this method works just like the other two above, it is the same behavior, the 
+same parameters, and the same specialization to the `long` data type. We have seen that the are 
+flatMaps to each, and now mapMulti to each, as well as simple Maps to each of these data types 
+too, therefore it is not impossible to see that this method would return a LongStream made up 
+`long` values, that can then be operated upon.<br/><br/>
+The following example will show how to do this
+</p>
+
+```Java
+
+OptionalLong sumOfDuplicatedLongsUpTo50 = 
+    Stream.iterate(1L, new Predicate<Long>() {
+        @Override
+        public boolean test(Long input) {
+            return input <= 50;
+        }
+    }, new UnaryOperator<Long>() {
+        @Override
+        public Long apply(Long input) {
+            return input + 1;
+        }
+    }).mapMultiToLong(new BiConsumer<Long, LongConsumer>() {
+        @Override
+        public void accept(Long value, LongConsumer longConsumer) {
+            // For each original value, 
+            // generate two copies into the LongStream
+            longConsumer.accept(value);
+            longConsumer.accept(value);
+        }
+    }).reduce(Long::sum);
+
+System.out.println("Sum of duplicated long values = " 
+             + sumOfDuplicatedLongsUpTo50.orElse(0L));
+```
+</li> 
 </list>
 </procedure>
 
@@ -368,6 +609,8 @@ operation such that any changes are reflected.
 having said all of this, let us take a look at the operations under this section
 </p>
 <procedure title="Terminal Operations | Regular Terminal Operations" collapsible="true">
+<warning><i>Operations such as reduce, collect,are <code>stateful terminal operations</code>. While 
+forEach can introduce to some extent stateful behavior in our code</i></warning>
 <list>
 <li><b><format color="CornFlowerBlue">reduce(BinaryOperator&lt;T&gt; accumulator)</format></b>: 
 terminal operation that performs a reduction on the stream elements using an associative 
@@ -526,6 +769,110 @@ Optional<String> shortest = words.stream()
 System.out.println(shortest.get()); // Output: java
 ```
 </li>
+</list>
+</procedure>
+<procedure title="Terminal Operations | Short-circuiting Terminal Operations" collapsible="true">
+<list>
+<li><b><format color="CornFlowerBlue">boolean allMatch(Predicate &lt;? super T&gt; predicate)  </format></b>: 
+Defined as a <code>terminal short-circuit operation</code>, that works by checking iteratively all 
+elements in the stream to determine <code>if all satisfy the predicate (which si defined as a stateless 
+non-interfering predicate)</code>.
+
+In this sense, this method will short-circuit and return false if at least one element does not confort to the given 
+predicate. 
+
+<note>If the stream is empty, or all elements conform to the predicate, it will return <code>true</code></note>
+
+An example of this would be.
+
+```Java
+
+List<Integer> numbers = 
+     Arrays.asList(2, 4, 6, 8, 10);
+boolean allEven = numbers.stream()
+        .allMatch(n -> n % 2 == 0);
+System.out.println(allEven); // Output: true
+//! If we were to change the list to add a five, 
+//! it would return false
+```
+</li> 
+<li><b><format color="CornFlowerBlue">boolean noneMatch(Predicate &lt;? super T &gt; predicate)</format></b>: This 
+is another <code>short-circuit terminal operation</code>, defined as a way to apply a predicate to a stream of 
+elements and review if none match the condition.
+
+As with the allMatch, the predicate should be a <code>non-interfering stateless predicate</code>.
+<note><i>This function returns true if no elements match the predicate, false otherwise (even if empty)</i></note>
+
+An example of this could be
+
+```Java
+
+List<Integer> numbers = Arrays.asList(1, 3, 5, 7, 9);
+boolean noneEven = numbers.stream()
+    .noneMatch(n -> n % 2 == 0);
+System.out.println(noneEven); // Output: true
+```
+</li>
+<li><b><format color="CornFlowerBlue">boolean anyMatch(Predicate&lt;? super T&gt; predicate)</format></b>:
+Another method in the family of our predicate short-circuit terminal operations. This method works by 
+<code>iterating over all elements, attempting to find at least one element conforts to the predicate sent in</code>
+
+The idea then is that this method will not evaluate all elements if we know at least one that is true to the predicate.
+
+<note><i>This implementation will return true if at least one element aligns with the predicate, if the stream 
+is empty or no one aligns it will return false.</i></note>
+
+An example would be this:
+
+```Java
+
+List<Integer> numbers = Arrays.asList(1, 3, 5, 6, 7);
+boolean hasEven = numbers.stream()
+    .anyMatch(n -> n % 2 == 0); 
+    // short-circuits as soon as '6' is found
+System.out.println(hasEven); // Output: true
+```
+</li>
+<li><b><format color="CornFlowerBlue">Optional&lt;T&gt; findAny()</format></b>: This method is another short-circuit 
+terminal operator that is specially used to find <code>any and all object in a Stream. It is not bound to 
+rules of ordering, comparsison or even review of objects</code>, instead it basically takes a single instance of 
+the Stream (from any thread if the stream is parallelized), and returns that.
+
+As far as I see, this method might be useful if we are expecting a Stream of values to contain at least one value, 
+and we need to gather that value rather than any specifics. Or when the stream is of equal elements, and we want to 
+grab some for testing.
+<note><i>This method is <code>non deterministic</code>, meaning on multiple calls it will not return the same value. 
+Additionally, it will return an optional to indicate whether there are any values in the Stream
+</i></note>
+
+An example implementation of this method would be 
+
+```Java
+List<String> names = 
+    Arrays
+        .asList("Alice", "Bob", 
+        "Charlie", "David", "Emma");
+
+// Single-threaded stream example
+Optional<String> anyNameInSingleThread = 
+      names
+      .stream()
+      .findAny();
+anyNameInSingleThread
+    .ifPresent(name -> 
+        System.out
+        .println(
+        "Found in single-threaded stream: " 
+        + name));
+
+// Parallel stream example
+Optional<String> anyNameInParallelStream = 
+          names.parallelStream().findAny();
+anyNameInParallelStream.ifPresent(name -> System.out
+        .println("Found in parallel stream: " 
+                                     + name));
+```
+</li> 
 </list>
 </procedure>
 

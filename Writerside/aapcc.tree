@@ -10,5 +10,9 @@
     <toc-element toc-title="Section One">
         <toc-element topic="Class-1-Tuesday-14th-Lambdas-and-Streams.md"/>
         <toc-element topic="Class-2-Thursday-16th-Streams-A-Closer-Look.md"/>
+        <toc-element topic="Class-3-Tuestday-21st-Jan-Collectors-API.md"/>
+        <toc-element topic="Class-4-Thursday-23rd-Jan.md"/>
+        <toc-element topic="Class-5-Tuesday-Jan-28th-Concurrency-and-Parallelism-Examples.md"/>
+        <toc-element topic="Class-6-Thrusday-Jan-28th-Producer-Consumer-Threading-Paradigm.md"/>
     </toc-element>
 </instance-profile>

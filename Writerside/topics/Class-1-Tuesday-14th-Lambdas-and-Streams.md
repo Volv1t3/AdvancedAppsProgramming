@@ -1970,7 +1970,7 @@ This means that this method applies a classifier to group elements based on a cr
 This criteria takes the input type of the stream, <code>(e.g., an Employee class abstraction)</code>, and extracts 
 content out of it through an anonymous class or lambda to classify by.  
 <br/>
-The resulting output of this `groupingBy` method is a `Map` implementation, where the grouped elements can be 
+The resulting output of this <code>groupingBy</code> method is a <code>Map</code> implementation, where the grouped elements can be 
 collected into lists, manipulated further using downstream collectors, or transformed to derive additional information.
 <br/>
 An example of this would be:

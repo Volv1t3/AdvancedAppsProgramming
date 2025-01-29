@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rules SYSTEM "https://resources.jetbrains.com/writerside/1.0/redirection-rules.dtd">
+<rules>
+    <!-- format is as follows
+    <rule id="<unique id>">
+        <accepts>page.html</accepts>
+    </rule>
+    -->
+    <rule id="3d7e217f">
+        <description>Created after removal of "Class #3 | Tuesday Jan 21st | Collectors API" from Advanced Apps
+            Programming | Course Content
+        </description>
+        <accepts>Class3Cop.html</accepts>
+    </rule>
+</rules>
