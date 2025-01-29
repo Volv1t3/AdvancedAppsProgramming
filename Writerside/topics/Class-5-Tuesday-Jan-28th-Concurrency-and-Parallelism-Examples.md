@@ -56,7 +56,9 @@ threads</code></b>, while with virtual threads, in theory we <b><code>could have
 millions of them simply waiting to be executed (sadly still locked by the processing 
 ability of our core)</code></b>.</p>
 <p>The following is a useful graph that I found online that represents this</p>
+
 <img src="https://segmentfault.com/img/bVdeZP4"/>
+
 <p>As can be noted, there is an OS layer, holding all the hardware threads of our computer, to 
 which <i><code>all the platform threads we can have in our program are connected</code></i>. This 
 is because platform threads in Java are always connected to a single hardware thread through 

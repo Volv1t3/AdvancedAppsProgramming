@@ -86,7 +86,7 @@ public class CourseRegistrationSystemV2 {
         Thread student6 = new Thread(() -> system.dropCourse("Physics", "Charlie"));  // Charlie drops out
         Thread student7 = new Thread(() -> system.registerCourse("Physics", "Dave")); // Dave registers
         Thread student8 = new Thread(() -> system.registerCourse("Physics", "Santiago")); // Santiago registers
-
+        Thread thread = new Thread(System.out::println);
         // Start threads
         student1.start();
         student2.start();
