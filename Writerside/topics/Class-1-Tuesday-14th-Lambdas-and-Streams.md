@@ -9,17 +9,17 @@
 
 ### What are Lambdas?
 <p>Lambdas, are segments of code, specifically implementations of functional interfaces, that do not have a 
-definition in a file nor in an inner class or secondary class. Rather these are anonymous blocks of code whose usage 
+definition in a file nor in an inner class, or secondary class. Rather these are anonymous blocks of code whose usage 
 is only in certain segments that expect a functional interface implementation.
 <br/><br/>
-These implementations can be defined in variables to be reused, or even us Functional Programming concepts to add 
-ontop the functionality of Lambdas. However these are mostly used to declare single use implementations.
+These implementations can be defined in variables to be reused, or even use Functional Programming concepts to add 
+ontop the functionality of Lambdas. However, these are mostly used to declare single use implementations.
 </p>
 
 ## Streams
 ### What are Streams?
 <p>Streams are flows of data, most of the time in bits, that have an origin (be it on our computer or on another 
-machine), that sends data over to our system (or another) in certain segments or chunks of information. 
+machine), that send data over to our system (or another) in certain segments or chunks of information. 
 <br/><br/>
 Streams in general are collections of data, sequences of them in fact, whose data can be operated upon. In Java we 
 have <code>intermediate and terminal operations</code> that are used to manipulate, collect, filter, and otherwise 
@@ -29,15 +29,18 @@ The main characteristics for Streams that we will talk about is <code>their time
 that data can be lost or stored, or seen but not looped back to.</p>
 
 ### Functional Programming In Java
-<p>Altough Java is written in such a way that its classes and their code is written in terms of OOP. The idea of the 
+<p>Although Java is written in such a way that its classes and their code are written in terms of OOP. The 
+modernization of the 
 language, and specially everything added in Java 8 and Java 9 (Lambdas, Method References...; Better Streams..., 
-respectively), is to allow for the programmer to use <code>Functional Programming</code>.
+respectively), allowed the programmer to use <code>Functional Programming</code>.
 <br/><br/>
-Functional programming is a programming model where we do not use classes or objects, rather we reduce our code to 
+Functional programming is a programming model where we do not use iterators, for loops, or while loops, rather we 
+reduce our code to 
 use functions, streams, parallelization, and concurrency to build code through <code>composition, extension, and 
 Method reuse</code>, instead of <code>inheritance, polymorphism, and encapsulation</code>. <br/><br/>
-In this sense, Streams, given through their functional programming style, we are capable of manipulating data using 
-functional programming and <code>interfaces, Lambdas, method references, method chaining, etc.</code> All of which 
+In this sense, Streams, given through their functional programming style, are capable of manipulating data using 
+functional programming ideas and <code>interfaces, Lambdas, method references, method chaining, etc.</code> All of 
+which 
 allow us to obscure the way our code works, reduce the complexity and minimize the probability of errors in our code.
 <br/><br/>
 The most basic example in terms of functional programming with streams is the following two pieces of code
